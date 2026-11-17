@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {"name": "sim", "runtimeExecutable": "python", "runtimeArgs": ["-m", "http.server", "5178", "--directory", "teardown-out/dist"], "port": 5178}
+  ]
+}

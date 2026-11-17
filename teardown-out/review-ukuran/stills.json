@@ -1,0 +1,178 @@
+[
+ {
+  "file": "./r8/beat-1.20.png",
+  "t": 1.1999999999999977,
+  "name": "hero, empty",
+  "view": "hero",
+  "s": 0,
+  "reading": 1.7999999999999998,
+  "needle": 21.59999999999999,
+  "tilt": 0,
+  "gate": 0
+ },
+ {
+  "file": "./r8/beat-3.20.png",
+  "t": 3.199999999999991,
+  "name": "FCD gate up, pour starts",
+  "view": "pour",
+  "s": 0.0277777777777762,
+  "reading": 1.9999999999999885,
+  "needle": 23.999999999999854,
+  "tilt": 0,
+  "gate": 80
+ },
+ {
+  "file": "./r8/beat-4.20.png",
+  "t": 4.199999999999987,
+  "name": "pour",
+  "view": "pour",
+  "s": 0.1666666666666651,
+  "reading": 2.9999999999999885,
+  "needle": 35.99999999999985,
+  "tilt": 0,
+  "gate": 80
+ },
+ {
+  "file": "./r8/beat-7.70.png",
+  "t": 7.6999999999999975,
+  "name": "box",
+  "view": "box",
+  "s": 0.6527777777777772,
+  "reading": 6.4999999999999964,
+  "needle": 77.99999999999996,
+  "tilt": 0,
+  "gate": 80
+ },
+ {
+  "file": "./r8/beat-10.40.png",
+  "t": 10.400000000000132,
+  "name": "pallet full, gate down",
+  "view": "box",
+  "s": 1,
+  "reading": 9,
+  "needle": 108,
+  "tilt": 0,
+  "gate": 39.99999999997321
+ },
+ {
+  "file": "./r8/beat-11.80.png",
+  "t": 11.800000000000201,
+  "name": "inside the scale",
+  "view": "mech",
+  "s": 1,
+  "reading": 9,
+  "needle": 108,
+  "tilt": 0,
+  "gate": 0
+ },
+ {
+  "file": "./r8/beat-15.20.png",
+  "t": 15.20000000000037,
+  "name": "dial",
+  "view": "dial",
+  "s": 1,
+  "reading": 9,
+  "needle": 108,
+  "tilt": 0,
+  "gate": 0
+ },
+ {
+  "file": "./r8/beat-18.70.png",
+  "t": 18.70000000000018,
+  "name": "front",
+  "view": "front",
+  "s": 1,
+  "reading": 9,
+  "needle": 108,
+  "tilt": 0,
+  "gate": 0
+ },
+ {
+  "file": "./r8/beat-22.20.png",
+  "t": 22.19999999999998,
+  "name": "top",
+  "view": "plan",
+  "s": 1,
+  "reading": 9,
+  "needle": 108,
+  "tilt": 0,
+  "gate": 0
+ },
+ {
+  "file": "./r8/beat-26.20.png",
+  "t": 26.199999999999754,
+  "name": "side 3/4",
+  "view": "side",
+  "s": 1,
+  "reading": 9,
+  "needle": 108,
+  "tilt": 0,
+  "gate": 0
+ },
+ {
+  "file": "./r8/beat-33.20.png",
+  "t": 33.199999999999356,
+  "name": "pour, old pan",
+  "view": "pour",
+  "s": 0,
+  "reading": 1.8000000000000003,
+  "needle": 21.600000000000005,
+  "tilt": 0,
+  "gate": 0
+ },
+ {
+  "file": "./r8/beat-39.20.png",
+  "t": 39.199999999999015,
+  "name": "old pan rocks",
+  "view": "pour",
+  "s": 0.7222222222220865,
+  "reading": 6.999999999999022,
+  "needle": 83.99999999998826,
+  "tilt": 5.333333333281189,
+  "gate": 80
+ },
+ {
+  "file": "./r8/beat-39.45.png",
+  "t": 39.449999999999,
+  "name": "falling",
+  "view": "pour",
+  "s": 0.7569444444443048,
+  "reading": -0.614575,
+  "needle": -7.374899999999999,
+  "tilt": 25.81039152639491,
+  "gate": 80
+ },
+ {
+  "file": "./r8/beat-39.90.png",
+  "t": 39.899999999998975,
+  "name": "landed",
+  "view": "pour",
+  "s": 0.8194444444443032,
+  "reading": -0.614575,
+  "needle": -7.374899999999999,
+  "tilt": 40,
+  "gate": 80
+ },
+ {
+  "file": "./r8/beat-45.20.png",
+  "t": 45.199999999998674,
+  "name": "hero, spill",
+  "view": "hero",
+  "s": 1,
+  "reading": -0.614575,
+  "needle": -7.374899999999999,
+  "tilt": 40,
+  "gate": 0
+ },
+ {
+  "file": "./r8/beat-55.00.png",
+  "t": 54.99999999999812,
+  "name": "end of tour",
+  "view": "hero",
+  "s": 0,
+  "reading": 1.7999999999999998,
+  "needle": 21.59999999999999,
+  "tilt": 0,
+  "gate": 0
+ }
+]
