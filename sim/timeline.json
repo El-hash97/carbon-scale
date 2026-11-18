@@ -1,0 +1,33 @@
+{
+  "duration": 54,
+  "fps": 60,
+  "beats": {
+    "FCD buka (tray baru)": 2.2,
+    "view Tuang": 3.4,
+    "view Box carbon": 6.5,
+    "FCD tutup, pallet penuh": 9.8,
+    "view Dalam timbangan": 10.8,
+    "tab Skema": 12.2,
+    "view Dial": 14,
+    "view Depan": 17.5,
+    "tab Deskripsi": 19.6,
+    "view Atas": 21,
+    "view Samping 3/4": 24.5,
+    "Exploded": 27.5,
+    "rakit kembali": 31,
+    "Pan lama": 32.2,
+    "view Tuang (pan lama)": 33.2,
+    "FCD buka (pan lama)": 34.2,
+    "tab Skema (pan lama)": 36,
+    "5 kg: pan lama menggoyang": 39.6,
+    "pan lama mendarat": 40.2,
+    "FCD tutup": 41.8,
+    "view Hero, tumpahan": 44,
+    "tab Cost": 45.2,
+    "chip SG-3": 46.4,
+    "slider 1 -> 3 kg/shift": 47.6,
+    "chip 30 hari": 50,
+    "tab Deskripsi (kembali)": 51.2,
+    "tray baru lagi": 52.5
+  }
+}

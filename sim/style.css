@@ -148,8 +148,7 @@ html, body { background: #ecebe6; }
 .ft .bt { padding: 7px 8px; font-size: 11.5px; white-space: nowrap; }
 .tour { margin-left: auto; display: flex; align-items: center; gap: 8px; letter-spacing: 1px; font-size: 11px; }
 .tour i { display: block; width: 7px; height: 7px; border-radius: 50%; background: var(--acc); margin: 0; opacity: 1; }
-.tour.on i { animation: blink 1.2s steps(2) infinite; }
-@keyframes blink { 50% { opacity: 0.15; } }
+/* the dot blinks on the tour clock (main.js), not a CSS animation: a recorded frame must depend on t alone */
 .src { position: absolute; left: 22px; bottom: 10px; font-size: 10.5px; color: var(--dim); }
 
 /* the operator's cursor and its press */

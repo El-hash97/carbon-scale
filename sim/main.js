@@ -43,12 +43,19 @@ const SHUT = {fcd: 0, fc: 0};
 const FCD = {fcd: 1, fc: 0};
 const OPEN1 = 2.2;
 const OPEN2 = 34.2;
+// The right panel is driven too: the Skema tab while the mechanism and the fall are on screen, Deskripsi for the top
+// view, and after the spill the Cost tab: a carbon type, the kg/shift slider dragged [from, to] over its 4th field (s),
+// a period, then back to Deskripsi. Cost goes back to its defaults while hidden, so the loop has no jump.
+const COST0 = {type: 'JG-01', kg: 1, days: 22};
 const TOUR_EV = [
   [OPEN1, 'gate', 1], [3.4, 'view', 'pour'], [6.5, 'view', 'box'], [OPEN1 + GATE_T + FILL_S, 'gate', 0],
-  [10.8, 'view', 'mech'], [14, 'view', 'dial'], [17.5, 'view', 'front'], [21, 'view', 'plan'], [24.5, 'view', 'side'],
-  [27.5, 'exp', 1], [31, 'exp', 0], [32.2, 'old', 1], [33.2, 'view', 'pour'], [OPEN2, 'gate', 1],
-  [OPEN2 + GATE_T + FILL_S, 'gate', 0], [44, 'view', 'hero'], [52.5, 'old', 0],
+  [10.8, 'view', 'mech'], [12.2, 'tab', 'sch'], [14, 'view', 'dial'], [17.5, 'view', 'front'], [19.6, 'tab', 'why'],
+  [21, 'view', 'plan'], [24.5, 'view', 'side'], [27.5, 'exp', 1], [31, 'exp', 0], [32.2, 'old', 1],
+  [33.2, 'view', 'pour'], [OPEN2, 'gate', 1], [36, 'tab', 'sch'], [OPEN2 + GATE_T + FILL_S, 'gate', 0],
+  [44, 'view', 'hero'], [45.2, 'tab', 'cost'], [46.4, 'ctype', 'SG-3'], [47.6, 'ckg', [1, 3], 1.2],
+  [50, 'cdays', 30], [51.2, 'tab', 'why'], [52.5, 'old', 0],
 ];
+const evEnd = (e) => e[0] + (e[3] || 0); // a drag lasts; a press is a moment
 function tourAt(c) {
   c = ((c % TOUR) + TOUR) % TOUR;
   let view = 'hero';
@@ -56,16 +63,22 @@ function tourAt(c) {
   let exp = 0;
   let gate = null; // the last gate press: [t, open]
   let open = null; // the press that started this pallet's pour
-  for (const [t, k, a] of TOUR_EV) {
+  let tab = 'why';
+  const cost0 = {...COST0};
+  for (const [t, k, a, d] of TOUR_EV) {
     if (t > c) break;
     if (k === 'view') view = a;
     else if (k === 'exp') [exp, view] = [a, a ? 'exp' : 'hero'];
     else if (k === 'old') [old, gate, open] = [a, null, null]; // a new pallet on the other pan
     else if (k === 'gate') [gate, open] = [[t, a], a ? t : open];
+    else if (k === 'tab') tab = a;
+    else if (k === 'ctype') cost0.type = a;
+    else if (k === 'cdays') cost0.days = a;
+    else if (k === 'ckg') cost0.kg = Math.round((a[0] + (a[1] - a[0]) * ss(t, t + d, c)) * 10) / 10; // the slider's 0.1 kg steps
   }
   const g = !gate ? 0 : clamp(gate[1] ? (c - gate[0]) / GATE_T : 1 - (c - gate[0]) / GATE_T, 0, 1);
   const s = open == null ? 0 : clamp((c - open - GATE_T) / FILL_S, 0, 1);
-  return {s, view, old, exp, gates: {fcd: g, fc: 0}};
+  return {s, view, old, exp, gates: {fcd: g, fc: 0}, tab, cost: cost0};
 }
 
 // ------------------------------------------------------------ page shell
@@ -367,15 +380,17 @@ sl.addEventListener('pointerdown', (e) => {
 // ------------------------------------------------------------ the cost tab: every number from cost(kg/shift, days, type)
 const rp = (x) => `Rp ${Math.round(x).toLocaleString('id-ID')}`;
 const kgf = (x) => `${x.toLocaleString('id-ID', {maximumFractionDigits: 1})} kg`;
-const cs = {type: 'JG-01', kg: 1, days: 22};
+const cs = {...COST0};
 const tabs = {why: $('tab-why'), sch: $('tab-sch'), cost: $('tab-cost')};
-for (const [k, b] of Object.entries(tabs))
-  b.onclick = () => {
-    for (const [j, c] of Object.entries(tabs)) {
-      c.classList.toggle('on', j === k);
-      $(`pg-${j}`).hidden = j !== k;
-    }
-  };
+let tabNow = 'why';
+const showTab = (k) => {
+  tabNow = k;
+  for (const [j, c] of Object.entries(tabs)) {
+    c.classList.toggle('on', j === k);
+    $(`pg-${j}`).hidden = j !== k;
+  }
+};
+for (const [k, b] of Object.entries(tabs)) b.onclick = () => showTab(k);
 const chips = (id, items, label, key) => {
   $(id).innerHTML = '';
   for (const v of items) {
@@ -757,6 +772,12 @@ function tick(dt, draw = true) {
     state.gates = t.gates;
     state.src = {...FCD};
     state.exp = t.exp;
+    if (t.tab !== tabNow) showTab(t.tab);
+    if (t.cost.type !== cs.type || t.cost.kg !== cs.kg || t.cost.days !== cs.days) {
+      Object.assign(cs, t.cost);
+      $('c-kg').value = cs.kg;
+      drawCost();
+    }
     if (t.view !== state.view) setView(t.view);
   } else if ((state.gates.fcd || state.gates.fc) && state.s < 1) {
     state.s = Math.min(1, state.s + ((state.gates.fcd + state.gates.fc) * dt) / FILL_S);
@@ -829,6 +850,8 @@ function tick(dt, draw = true) {
     tourEl.innerHTML = tour.on ? '<i></i>AUTO TOUR' : '▶ LANJUT TOUR';
     tourEl.title = tour.on ? 'klik, geser, scroll atau tekan tombol apa saja untuk ambil alih' : 'jalankan tour lagi (otomatis setelah 25 s diam)';
   }
+  const dot = tourEl.querySelector('i');
+  if (dot) dot.style.opacity = Math.floor((T - tour.t0) / 0.6) % 2 ? 0.15 : 1; // blinks on the tour clock
   // the cost of what the simulation just spilled, at the chosen carbon's price
   $('c-sim').textContent = m.spilled > 0
     ? `Dari simulasi: ${f2(m.spilled)} kg ${cs.type} tumpah = ${rp(m.spilled * PRICES[cs.type])} (sekali jatuh)`
@@ -843,24 +866,37 @@ const appXY = (el) => {
   const r = el.getBoundingClientRect();
   return [(r.left + r.width / 2 - a.left) / scale, (r.top + r.height / 2 - a.top) / scale];
 };
-const target = ([, k, a]) => (k === 'view' ? vbtn[a] : k === 'gate' ? $('g-fcd') : k === 'exp' ? tbtn.exp : tbtn.old);
+const chip = (id, v) => $(id).querySelector(`[data-v="${v}"]`);
+const target = ([, k, a]) =>
+  ({view: () => vbtn[a], gate: () => $('g-fcd'), exp: () => tbtn.exp, old: () => tbtn.old, tab: () => $(`tab-${a}`),
+    ctype: () => chip('c-type', a), cdays: () => chip('c-days', a), ckg: () => $('c-kg')})[k]();
+// the slider thumb at value v, in app px (the native thumb sits 8 px in from each end of the track)
+const thumbXY = (v) => {
+  const el = $('c-kg');
+  const a = app.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  const u = (v - +el.min) / (+el.max - +el.min);
+  return [(r.left - a.left) / scale + 8 + u * (r.width / scale - 16), (r.top + r.height / 2 - a.top) / scale];
+};
 const REST = [[820, 640], [760, 560], [900, 600], [700, 620]]; // where the hand waits between presses, over the machine
 let WP = [];
 function plan() {
-  // waypoints [t, x, y]: arrive 0.18 s before a press, stay 0.22 s after, wait at a rest point if the next press is far
-  spots = TOUR_EV.map((e) => appXY(target(e)));
+  // waypoints [t, x, y]: arrive 0.18 s before a press, stay 0.22 s after it ends (a drag carries the thumb from its
+  // start to its end), wait at a rest point if the next press is far. A part on a hidden tab is placed once its tab opens.
+  spots = TOUR_EV.map((e) => (e[1] === 'ckg' ? [thumbXY(e[2][0]), thumbXY(e[2][1])] : [appXY(target(e))]));
   WP = [[0, ...REST[0]]];
   TOUR_EV.forEach((e, i) => {
-    WP.push([e[0] - 0.18, ...spots[i]], [e[0] + 0.22, ...spots[i]]);
+    const [a, z] = [spots[i][0], spots[i][spots[i].length - 1]];
+    WP.push([e[0] - 0.18, ...a], [e[0], ...a], [evEnd(e), ...z], [evEnd(e) + 0.22, ...z]);
     const next = TOUR_EV[i + 1] ? TOUR_EV[i + 1][0] : TOUR;
-    if (next - e[0] > 1.9) WP.push([e[0] + 1.3, ...REST[i % REST.length]]);
+    if (next - evEnd(e) > 1.9) WP.push([evEnd(e) + 1.3, ...REST[i % REST.length]]);
   });
   WP.push([TOUR, ...REST[0]]); // and back where it started, so the loop is seamless
 }
-const ss = (a, b, x) => {
+function ss(a, b, x) {
   const u = clamp((x - a) / (b - a), 0, 1);
   return u * u * (3 - 2 * u);
-};
+}
 function cursorAt(c) {
   c = ((c % TOUR) + TOUR) % TOUR;
   let i = 0;
@@ -873,8 +909,8 @@ function cursorAt(c) {
   let press = -1;
   let ring = null;
   TOUR_EV.forEach((e, j) => {
-    if (c >= e[0] - 0.06 && c < e[0] + 0.12) press = j;
-    if (c >= e[0] && c < e[0] + 0.5) ring = [...spots[j], (c - e[0]) / 0.5];
+    if (c >= e[0] - 0.06 && c < evEnd(e) + 0.12) press = j; // held down for the whole of a drag
+    if (c >= e[0] && c < e[0] + 0.5) ring = [...spots[j][0], (c - e[0]) / 0.5];
   });
   return {x: x0 + (x1 - x0) * k + (len ? (-(y1 - y0) / len) * bow : 0), y: y0 + (y1 - y0) * k + (len ? ((x1 - x0) / len) * bow : 0), press, ring};
 }
@@ -933,7 +969,8 @@ function frame(now) {
     }
   });
   const t0 = performance.now();
-  warmUp(renderer, camera, [{scene}]).then(() => {
+  // the fonts too: a label's width (and so where it sits) depends on them, so no frame is drawn before they load
+  Promise.all([warmUp(renderer, camera, [{scene}]), document.fonts.ready]).then(() => {
     const rt = new THREE.WebGLRenderTarget(4, 4);
     renderer.setRenderTarget(rt);
     renderer.render(scene, camera);
@@ -941,16 +978,46 @@ function frame(now) {
     rt.dispose();
     for (const o of hidden) o.visible = false;
     window.WARM_MS = performance.now() - t0;
+    window.SIM.ready = true; // the recorder waits for this: every shader is linked
     last = performance.now();
     requestAnimationFrame(frame);
   });
 }
-// the scrubber: hold the clock, restart the tour, step it at a fixed 1/60 s and read back what is on screen
+// The recorder's clock. render(t) is a pure function of t: the page is a fixed-step simulation (1/60 s) from a full
+// reset, so the frame at t is always the state after round(t * 60) steps from the same start, whatever was drawn
+// before. Stepping forward a frame at a time (the recorder) and jumping straight to t give the same pixels.
+const FPS = 60;
 const restart = () => {
   hold = true;
+  T = 0;
+  lastInput = -1e9;
+  Object.assign(state, {s: 0, view: 'hero', cut: 0, old: 0, ghost: 0, lid: 0, exp: 0, labels: 1, gates: {...SHUT}, src: {...FCD}, iso: 'all'});
   startTour();
-  tour.t0 = T;
+  tour.t0 = 0;
+  Object.assign(cam, VIEWS.hero);
+  for (const k of Object.keys(camV)) delete camV[k];
+  cutE = lidE = expE = 0;
+  viewSince = 0;
+  lastView = '';
+  frameNo = 0;
+  Object.assign(gE, {fcd: 0, fc: 0});
+  for (const o of [lpos, lwid, lastLabels]) for (const k of Object.keys(o)) delete o[k];
+  Object.assign(cs, COST0);
+  $('c-kg').value = cs.kg;
+  drawCost();
+  showTab('why');
+  app.classList.remove('bare');
   tick(0);
+};
+let simN = -1; // the step the page is at, for render()
+const render = (t) => {
+  const n = Math.round(t * FPS);
+  if (simN < 0 || n < simN) {
+    restart();
+    simN = 0;
+  }
+  for (; simN < n; simN++) tick(1 / FPS);
+  return {t, n};
 };
 const advance = (sec) => {
   const n = Math.max(1, Math.round(sec * 60));
@@ -980,4 +1047,5 @@ const bench = (t, n = 150) => {
   ms.sort((x, y) => x - y);
   return {tier: TIERS[t].name, pr: renderer.getPixelRatio(), shadow: TIERS[t].shadow, avg: ms.reduce((x, y) => x + y, 0) / n, p95: ms[Math.floor(n * 0.95)], gpu: gpuName()};
 };
-window.SIM = {model, state, tourAt, FIX, P, takeOver, setView, setGate, restart, advance, probe, bench, gpuName, TIERS, startTour, cursorAt: (c) => cursorAt(c)};
+window.SIM = {model, state, tourAt, FIX, P, takeOver, setView, setGate, restart, advance, probe, bench, gpuName, TIERS, startTour, cursorAt: (c) => cursorAt(c),
+  render, duration: TOUR, fps: FPS, ready: false, TOUR_EV};
