@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/", "destination": "/teardown-out/dist/sim.html" },
+    { "source": "/video", "destination": "/teardown-out/sim-tour.mp4" }
+  ],
+  "headers": [
+    {
+      "source": "/teardown-out/dist/sim.html",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    }
+  ]
+}
