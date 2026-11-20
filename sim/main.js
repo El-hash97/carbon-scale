@@ -192,12 +192,42 @@ const qp = new URLSearchParams(location.search).get('q');
 let tier = qp != null ? clamp(Math.round(+qp) || 0, 0, TIERS.length - 1) : matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 700 ? 2 : 0;
 let autoTier = qp == null;
 let scale = 1;
+// Phones and small tablets (narrower than 900 px or shorter than 560 px) get their own layout: the canvas full-width
+// on top, the panels stacked below and scrolled. VW x VH is the canvas in page px; on desktop it is the 1600 x 900 stage.
+let mobile = false;
+let VW = W;
+let VH = H;
+let mobW = 0; // the width the mobile canvas was sized for: the address bar coming and going must not resize it
 const fit = () => {
-  scale = Math.min(innerWidth / W, innerHeight / H);
-  app.style.transform = `translate(${(innerWidth - W * scale) / 2}px, ${(innerHeight - H * scale) / 2}px) scale(${scale})`;
-  renderer.setPixelRatio(clamp((devicePixelRatio || 1) * scale, 0.75, TIERS[tier].pr));
+  // the layout viewport: on a phone innerWidth grows to fit the 1600 px stage before this runs, clientWidth does not
+  const {clientWidth: cw, clientHeight: ch} = document.documentElement;
+  mobile = cw < 900 || ch < 560;
+  app.classList.toggle('mob', mobile);
+  document.documentElement.classList.toggle('mob-doc', mobile);
+  if (mobile) {
+    scale = 1;
+    app.style.transform = 'none';
+    if (cw !== mobW || VH === H) {
+      mobW = cw;
+      VW = cw;
+      VH = Math.round(ch >= cw ? Math.min(ch * 0.58, cw * 1.3) : ch * 0.86);
+    }
+    renderer.setPixelRatio(clamp(devicePixelRatio || 1, 0.75, TIERS[tier].pr));
+    renderer.setSize(VW, VH, true);
+  } else {
+    [VW, VH, mobW] = [W, H, 0];
+    scale = Math.min(innerWidth / W, innerHeight / H);
+    app.style.transform = `translate(${(innerWidth - W * scale) / 2}px, ${(innerHeight - H * scale) / 2}px) scale(${scale})`;
+    canvas.style.width = canvas.style.height = '';
+    renderer.setPixelRatio(clamp((devicePixelRatio || 1) * scale, 0.75, TIERS[tier].pr));
+    renderer.setSize(W, H, false);
+  }
+  camera.aspect = VW / VH;
+  camera.updateProjectionMatrix();
+  $('leads').setAttribute('width', VW);
+  $('leads').setAttribute('height', VH);
+  app.style.setProperty('--vh', `${VH}px`);
   spots = null; // the cursor's targets moved
-  renderer.setSize(W, H, false);
 };
 let spots = null;
 const applyTier = () => {
@@ -468,19 +498,42 @@ addEventListener('keydown', (e) => {
 });
 // orbit and zoom
 let drag = null;
+const touches = new Map(); // pointers down on the canvas: two of them pinch
+const spread = () => {
+  const [a, z] = [...touches.values()];
+  return Math.hypot(a.x - z.x, a.y - z.y);
+};
+let pinch = 0;
 canvas.addEventListener('pointerdown', (e) => {
   takeOver();
-  drag = {x: e.clientX, y: e.clientY};
+  touches.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  drag = touches.size === 1 ? {x: e.clientX, y: e.clientY} : null;
+  if (touches.size === 2) pinch = spread();
   canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove', (e) => {
+  if (!touches.has(e.pointerId)) return;
+  touches.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  lastInput = T;
+  if (touches.size === 2) {
+    const d = spread();
+    if (pinch > 0 && d > 0) off.k = clamp((off.k * pinch) / d, 0.35, 2.5); // fingers apart = closer
+    pinch = d;
+    return;
+  }
   if (!drag) return;
   off.az -= ((e.clientX - drag.x) / scale) * 0.3;
   off.el = clamp(off.el + ((e.clientY - drag.y) / scale) * 0.2, -30, 70);
   drag = {x: e.clientX, y: e.clientY};
-  lastInput = T;
 });
-canvas.addEventListener('pointerup', () => (drag = null));
+const lift = (e) => {
+  touches.delete(e.pointerId);
+  pinch = 0;
+  const left = [...touches.values()][0]; // one finger still down: carry on orbiting from where it is
+  drag = left ? {x: left.x, y: left.y} : null;
+};
+canvas.addEventListener('pointerup', lift);
+canvas.addEventListener('pointercancel', lift);
 canvas.addEventListener(
   'wheel',
   (e) => {
@@ -566,17 +619,19 @@ function drawLabels(m, show, alpha, dt) {
   for (const k of Object.keys(LABEL)) {
     const el = labelEls[k];
     v3.copy(A[k]).project(camera);
-    const x = (v3.x * 0.5 + 0.5) * W;
-    const y = (-v3.y * 0.5 + 0.5) * H;
-    const [LB, RB] = app.classList.contains('bare') ? [20, W - 20] : [350, W - 390];
-    if (!show.includes(k) || alpha < 0.02 || v3.z > 1 || x < LB - 20 || x > RB + 60 || y < 70 || y > H - 80) {
+    const x = (v3.x * 0.5 + 0.5) * VW;
+    const y = (-v3.y * 0.5 + 0.5) * VH;
+    const [LB, RB] = mobile ? [6, VW - 6] : app.classList.contains('bare') ? [20, W - 20] : [350, W - 390];
+    const [TB, BB] = mobile ? [6, VH - 6] : [70, H - 80];
+    if (!show.includes(k) || alpha < 0.02 || v3.z > 1 || x < LB - 20 || x > RB + 60 || y < TB || y > BB) {
       el.style.display = 'none';
       delete lastLabels[k];
       delete lpos[k];
       continue;
     }
     const fall = m.fall > 0 && PUSH_FALL[k]; // only once it is off the pin, so the label swings with the crate
-    const [dx, dy] = fall ? [fall[0] * -m.side, fall[1]] : PUSH[k];
+    const pk = mobile ? Math.min(1, VW / 1100) : 1; // the offsets were set for the 1600 px stage
+    const [dx, dy] = (fall ? [fall[0] * -m.side, fall[1]] : PUSH[k]).map((v) => v * pk);
     el.style.display = 'block';
     el.style.opacity = alpha;
     el.textContent = LABEL[k](m);
@@ -584,7 +639,7 @@ function drawLabels(m, show, alpha, dt) {
     const bw = (lwid[k] = Math.max(lwid[k] || 0, el.offsetWidth));
     const bh = el.offsetHeight;
     const lx = dx < 0 ? clamp(x + dx, LB + bw, RB) : clamp(x + dx, LB, RB - bw);
-    boxes.push({k, el, x, y, lx, ly: clamp(y + dy, 100, H - 140), l: dx < 0 ? lx - bw : lx, w: bw, h: bh, left: dx < 0});
+    boxes.push({k, el, x, y, lx, ly: mobile ? clamp(y + dy, 14, VH - 14) : clamp(y + dy, 100, H - 140), l: dx < 0 ? lx - bw : lx, w: bw, h: bh, left: dx < 0});
   }
   // no two boxes overlap: walk them top to bottom and push each below any box it would cover
   boxes.sort((a, b) => a.ly - b.ly);
@@ -792,7 +847,7 @@ function tick(dt, draw = true) {
   const m = model(state.s, state.old ? 'old' : 'new', state.src, gE);
   // the camera eases toward its view; the machine itself is posed only from m
   const V0 = VIEWS[state.view];
-  const tgt = {tx: V0.tx, ty: V0.ty, tz: V0.tz, az: V0.az + off.az, el: clamp(V0.el + off.el, -10, 89), d: V0.d * off.k};
+  const tgt = {tx: V0.tx, ty: V0.ty, tz: V0.tz, az: V0.az + off.az, el: clamp(V0.el + off.el, -10, 89), d: V0.d * off.k * (mobile ? Math.max(1, 0.96 / (VW / VH)) : 1)};
   const k = 1 - Math.exp(-dt / 0.35);
   for (const key of ['az', 'tx', 'ty', 'tz', 'el', 'd']) {
     const e = key === 'az' ? wrap(tgt.az - cam.az) : tgt[key] - cam[key];
@@ -878,11 +933,12 @@ const thumbXY = (v) => {
   const u = (v - +el.min) / (+el.max - +el.min);
   return [(r.left - a.left) / scale + 8 + u * (r.width / scale - 16), (r.top + r.height / 2 - a.top) / scale];
 };
-const REST = [[820, 640], [760, 560], [900, 600], [700, 620]]; // where the hand waits between presses, over the machine
+let REST = [[820, 640], [760, 560], [900, 600], [700, 620]]; // where the hand waits between presses, over the machine
 let WP = [];
 function plan() {
   // waypoints [t, x, y]: arrive 0.18 s before a press, stay 0.22 s after it ends (a drag carries the thumb from its
   // start to its end), wait at a rest point if the next press is far. A part on a hidden tab is placed once its tab opens.
+  if (mobile) REST = [[VW * 0.55, VH * 0.72], [VW * 0.45, VH * 0.62], [VW * 0.6, VH * 0.66], [VW * 0.4, VH * 0.76]];
   spots = TOUR_EV.map((e) => (e[1] === 'ckg' ? [thumbXY(e[2][0]), thumbXY(e[2][1])] : [appXY(target(e))]));
   WP = [[0, ...REST[0]]];
   TOUR_EV.forEach((e, i) => {

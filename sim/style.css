@@ -158,3 +158,28 @@ html, body { background: #ecebe6; }
 /* H: only the machine, its labels and the title */
 .bare .pn, .bare .ft, .bare .ft2, .bare .src { display: none; }
 .src b { color: var(--ink); }
+
+/* ---------------------------------------------------------------- mobile: canvas on top, panels stacked and scrolled */
+html.mob-doc, html.mob-doc body { overflow: auto; height: auto; overscroll-behavior-y: contain; }
+#app.mob { position: relative !important; width: 100% !important; height: auto !important; transform: none !important; display: flex; flex-direction: column; padding-bottom: 16px; }
+.mob #gl { position: relative; inset: auto; order: 0; display: block; flex: none; }
+.mob #leads { position: absolute; left: 0; top: 0; }
+.mob #labels { position: absolute; left: 0; top: 0; right: auto; bottom: auto; width: 100%; height: var(--vh); overflow: hidden; }
+.mob .lb { font-size: 10px; padding: 3px 6px; white-space: normal; max-width: min(48vw, 210px); line-height: 1.3; }
+.mob .hd { left: 12px; top: 10px; }
+.mob .t1 { font-size: 15px; }
+.mob .t1 span, .mob .t2 { display: none; }
+.mob .pn, .mob .ft, .mob .ft2, .mob .src { position: static; width: auto; margin: 10px 10px 0; }
+.mob .pn.left { order: 1; }
+.mob .ft { order: 2; flex-wrap: wrap; gap: 8px; }
+.mob .ft2 { order: 3; flex-wrap: wrap; gap: 6px; }
+.mob .pn.right { order: 4; width: auto; }
+.mob .src { order: 5; font-size: 10px; line-height: 1.5; }
+.mob .grp { flex-wrap: wrap; }
+.mob .ft .bt, .mob .ft2 .bt { padding: 9px 10px; font-size: 12px; }
+.mob .tour { margin-left: 0; }
+.mob .big { font-size: 40px; margin: 4px 0 8px; }
+.mob .ft2 .hint { display: none; }
+.mob .gt .bt { min-width: 104px; padding: 9px 10px; }
+.mob .chart { height: auto; max-height: 180px; }
+.mob #cur, .mob #ring { display: none; } /* the tour still runs; its hand would point at buttons scrolled out of view */
