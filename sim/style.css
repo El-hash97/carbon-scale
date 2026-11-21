@@ -160,7 +160,8 @@ html, body { background: #ecebe6; }
 .src b { color: var(--ink); }
 
 /* ---------------------------------------------------------------- mobile: canvas on top, panels stacked and scrolled */
-html.mob-doc, html.mob-doc body { overflow: auto; height: auto; overscroll-behavior-y: contain; }
+html.mob-doc { overflow: auto; height: auto; } /* only the root scrolls: a scrolling body with overscroll contain swallowed every swipe */
+html.mob-doc body { overflow: visible; height: auto; }
 #app.mob { position: relative !important; width: 100% !important; height: auto !important; transform: none !important; display: flex; flex-direction: column; padding-bottom: 16px; }
 .mob #gl { position: relative; inset: auto; order: 0; display: block; flex: none; }
 .mob #leads { position: absolute; left: 0; top: 0; }
@@ -183,3 +184,4 @@ html.mob-doc, html.mob-doc body { overflow: auto; height: auto; overscroll-behav
 .mob .gt .bt { min-width: 104px; padding: 9px 10px; }
 .mob .chart { height: auto; max-height: 180px; }
 .mob #cur, .mob #ring { display: none; } /* the tour still runs; its hand would point at buttons scrolled out of view */
+.mob #gl { touch-action: pan-y; } /* a vertical swipe on the machine scrolls the page; sideways turns it, two fingers zoom */
