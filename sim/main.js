@@ -192,7 +192,7 @@ const qp = new URLSearchParams(location.search).get('q');
 let tier = qp != null ? clamp(Math.round(+qp) || 0, 0, TIERS.length - 1) : matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 700 ? 2 : 0;
 let autoTier = qp == null;
 let scale = 1;
-// Phones and small tablets (narrower than 900 px or shorter than 560 px) get their own layout: the canvas full-width
+// Portrait phones and tablets (narrower than 900 px, taller than wide) get their own layout: the canvas full-width
 // on top, the panels stacked below and scrolled. VW x VH is the canvas in page px; on desktop it is the 1600 x 900 stage.
 let mobile = false;
 let VW = W;
@@ -201,7 +201,7 @@ let mobW = 0; // the width the mobile canvas was sized for: the address bar comi
 const fit = () => {
   // the layout viewport: on a phone innerWidth grows to fit the 1600 px stage before this runs, clientWidth does not
   const {clientWidth: cw, clientHeight: ch} = document.documentElement;
-  mobile = cw < 900 || ch < 560;
+  mobile = ch > cw && cw < 900; // a phone on its side gets the desktop stage, scaled
   app.classList.toggle('mob', mobile);
   document.documentElement.classList.toggle('mob-doc', mobile);
   if (mobile) {
@@ -216,8 +216,9 @@ const fit = () => {
     renderer.setSize(VW, VH, true);
   } else {
     [VW, VH, mobW] = [W, H, 0];
-    scale = Math.min(innerWidth / W, innerHeight / H);
-    app.style.transform = `translate(${(innerWidth - W * scale) / 2}px, ${(innerHeight - H * scale) / 2}px) scale(${scale})`;
+    scrollTo(0, 0); // coming back from the scrolled portrait layout
+    scale = Math.min(cw / W, ch / H);
+    app.style.transform = `translate(${(cw - W * scale) / 2}px, ${(ch - H * scale) / 2}px) scale(${scale})`;
     canvas.style.width = canvas.style.height = '';
     renderer.setPixelRatio(clamp((devicePixelRatio || 1) * scale, 0.75, TIERS[tier].pr));
     renderer.setSize(W, H, false);
